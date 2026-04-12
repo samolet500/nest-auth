@@ -54,4 +54,14 @@
 | `@react-email/components`   | UI-компоненты для создания email-шаблонов в React           |
 | `@react-email/html`         | Рендеринг email-шаблонов в HTML                             |
 
+### Дев зависимости
+
+| Пакет                                 | Назначение                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| @trivago/prettier-plugin-sort-imports | Плагин для Prettier, автоматически сортирует импорты по заданным правилам |
+| @types/uuid                           | TypeScript-типы для библиотеки uuid                                       |
+| @types/express-session                | TypeScript-типы для express-session                                       |
+| @types/cookie-parser                  | TypeScript-типы для cookie-parser                                         |
+| @types/react                          | TypeScript-типы для React (нужны для TS-подсказок и типизации JSX)        |
+
 Подробнее про настройку API — в [`server/README.md`](server/README.md).
