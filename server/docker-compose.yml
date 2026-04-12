@@ -1,0 +1,45 @@
+services:
+  # PostgreSQL — основная БД приложения (пользователи, сессии и т.д.)
+  db:
+    container_name: postgres
+    image: postgres:18.3
+    # Перезапуск контейнера после сбоев или перезагрузки хоста
+    restart: always
+    ports:
+      # Хост:5433 → контейнер:5432 — чтобы не конфликтовать с локальным Postgres на 5432
+      - 5433:5432
+    environment:
+      # Учётные данные и имя БД из .env (не хранить секреты в репозитории)
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # Персистентное хранилище данных БД вне контейнера
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nest-auth-network
+
+  # Redis — кэш, очереди, rate limiting, сессии в памяти (по необходимости в коде)
+  redis:
+    container_name: redis
+    image: redis:8.6
+    restart: always
+    ports:
+      # Порт Redis на хосте для подключения с машины разработчика
+      - 6379:6379
+    # Пароль из .env — без него Redis открыт для всех, кто достучится до порта
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      # Сохранение данных Redis на диск (RDB/AOF по настройкам образа)
+      - redis_data:/data
+    networks:
+      - nest-auth-network
+
+# Именованные тома: данные переживают удаление контейнеров
+volumes:
+  postgres_data:
+  redis_data:
+
+# Общая сеть: сервисы видят друг друга по имени (db, redis)
+networks:
+  nest-auth-network:
