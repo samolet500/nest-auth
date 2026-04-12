@@ -43,7 +43,7 @@
 | `@nestjs/config`            | Конфигурация и переменные окружения (`.env`)                |
 | `class-transformer`         | Преобразование plain-объектов в классы (часто вместе с DTO) |
 | `class-validator`           | Валидация DTO через декораторы                              |
-| `argon2`                    | Хеширование паролей                                         |
+| `argon2`                    | Хеширование паролей (безопасная альтернатива bcrypt)        |
 | `@prisma/client`            | ORM-клиент для работы с базой данных через Prisma           |
 | `cookie-parser`             | Парсинг cookies из HTTP-запросов в Express                  |
 | `connect-redis`             | Хранение сессий express-session в Redis                     |
