@@ -34,7 +34,7 @@
 - **Порт:** `5433` (см. `docker-compose.yml`: проброс на хост, чтобы не конфликтовать с локальным Postgres на 5432)
 - **Пользователь, пароль, имя БД** — как в `server/.env` (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`).
 
-## Зависимости сервера
+## Зависимости сервера (npm install)
 
 Основные npm-пакеты в `server` и зачем они нужны:
 
@@ -54,7 +54,7 @@
 | `@react-email/components`   | UI-компоненты для создания email-шаблонов в React           |
 | `@react-email/html`         | Рендеринг email-шаблонов в HTML                             |
 
-### Дев зависимости
+### Дев зависимости (npm install -D)
 
 | Пакет                                 | Назначение                                                                |
 | ------------------------------------- | ------------------------------------------------------------------------- |
@@ -63,5 +63,6 @@
 | @types/express-session                | TypeScript-типы для express-session                                       |
 | @types/cookie-parser                  | TypeScript-типы для cookie-parser                                         |
 | @types/react                          | TypeScript-типы для React (нужны для TS-подсказок и типизации JSX)        |
+| prisma                                | Prisma CLI                                                                |
 
 Подробнее про настройку API — в [`server/README.md`](server/README.md).

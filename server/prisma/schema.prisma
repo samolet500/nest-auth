@@ -7,3 +7,99 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Types
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum AuthMethod {
+  EMAIL
+  GOOGLE
+  YANDEX
+}
+
+enum TokenType {
+  VERIFICATION
+  TWO_FACTOR
+  PASSWORD_RESET
+}
+
+/**
+ * User model
+ * @description User model represents a user of the application.
+ * @field id - User ID
+ * @field email - User email
+ * @field name - User name
+ * @field picture - User picture
+ */
+model User {
+  id String @id @default(uuid())
+
+  email    String  @unique
+  name     String
+  picture  String?
+  password String
+
+  role UserRole @default(USER)
+
+  isVerified         Boolean @default(false) @map("is_verified")
+  isTwoFactorEnabled Boolean @default(false) @map("is_two_factor_enabled")
+
+  authMethod AuthMethod @default(EMAIL)
+
+  accounts Account[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+/**
+ * @description Account model represents a user's account.
+ * @field id - Account ID
+ * @field type - Account type
+ * @field provider - Account provider
+ * @field refreshToken - Account refresh token
+ * @field accessToken - Account access token
+ * @field expiresAt - Account expires at
+ */
+model Account {
+  id String @id @default(uuid())
+
+  type     String
+  provider String
+
+  refreshToken String?   @map("refresh_token")
+  accessToken  String?   @map("access_token")
+  expiresAt    DateTime? @map("expires_at")
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
+
+/**
+ * @description Token model represents a token for a user.
+ * @field id - Token ID
+ * @field email - Token email
+ * @field token - Token value
+ * @field type - Token type
+ * @field expiresIn - Token expires in
+ */
+model Token {
+  id String @id @default(uuid())
+
+  email     String
+  token     String    @unique
+  type      TokenType @map("type")
+  expiresIn Int       @map("expires_in")
+
+  @@map("tokens")
+}
