@@ -17,7 +17,6 @@ function postgresUrlFromEnv(): string {
   return `postgresql://${user}:${password}@${host}:${port}/${database}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
