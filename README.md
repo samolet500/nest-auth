@@ -53,6 +53,8 @@
 | `@nestjs-modules/mailer`    | Отправка писем (SMTP, шаблоны)                              |
 | `@react-email/components`   | UI-компоненты для создания email-шаблонов в React           |
 | `@react-email/html`         | Рендеринг email-шаблонов в HTML                             |
+@prisma/adapter-pg
+pg
 
 ### Дев зависимости (npm install -D)
 
@@ -64,5 +66,7 @@
 | @types/cookie-parser                  | TypeScript-типы для cookie-parser                                         |
 | @types/react                          | TypeScript-типы для React (нужны для TS-подсказок и типизации JSX)        |
 | prisma                                | Prisma CLI                                                                |
+@types/pg
+eslint-import-resolver-typescript
 
 Подробнее про настройку API — в [`server/README.md`](server/README.md).

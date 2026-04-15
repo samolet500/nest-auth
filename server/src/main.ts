@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from '@/app.module';
 import cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import IORedis from 'ioredis';
 import session from 'express-session';
-import { ms, StringValue } from './common/utils/ms.util';
-import { parseBoolean } from './common/utils/parse-boolean.util';
+import { ms, StringValue } from '@/common/utils/ms.util';
+import { parseBoolean } from '@/common/utils/parse-boolean.util';
+import { redisUrlFromConfig } from '@/common/utils/redis-url.util';
 import { RedisStore } from 'connect-redis';
 
 async function bootstrap() {
@@ -14,7 +15,7 @@ async function bootstrap() {
 
   const config = app.get(ConfigService);
 
-  const redis = new IORedis(config.getOrThrow<string>('REDIS_URI'));
+  const redis = new IORedis(redisUrlFromConfig(config));
 
   // cookieParser: парсит куки из запроса и делает их доступными в req.cookies.
   app.use(cookieParser(config.getOrThrow<string>('COOKIE_SECRET')));
