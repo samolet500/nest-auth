@@ -1,13 +1,16 @@
-import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import type { Request } from 'express';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { RegisterDto } from './dto/register.dto';
 import { UserService } from '@/user/user.service';
 import { AuthMethod } from 'generated/prisma/enums';
 import { User } from 'generated/prisma/client';
+import { LoginDto } from './dto/login.dto';
+import { verify } from 'argon2';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
-  public constructor(private readonly userService: UserService) {}
+  public constructor(private readonly userService: UserService, private readonly configService: ConfigService) {}
 
   /**
    * Регистрация по email: проверяет уникальность email, создаёт пользователя
@@ -35,11 +38,42 @@ export class AuthService {
     return user;
   }
 
-  /** Вход в систему (реализация позже). */
-  public async login() {}
+  /** Вход в систему. */
+  public async login(req: Request, dto: LoginDto) {
+    const user = await this.userService.findByEmail(dto.email);
 
-  /** Выход из системы: очистка сессии и т.п. (реализация позже). */
-  public async logout() {}
+    if (!user || !user.password) {
+      throw new NotFoundException('Пользователь не найден. Пожалуйста, проверьте введенные данные.');
+    }
+
+    const isPasswordValid = await verify(user.password, dto.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Невернве email или пароль. Пожалуйста, попробуйте еще раз или восстановите пароль, если забыли его.');
+    }
+
+    await this.saveSession(req, user);
+    return user;
+  }
+
+  /** Выход из системы: очистка сессии. */
+  public async logout(req: Request, res: Response): Promise<void> {
+    return new Promise((resolve, reject) => {
+      req.session.destroy(err => {
+				if (err) {
+					return reject(
+						new InternalServerErrorException(
+							'Не удалось завершить сессию. Возможно, возникла проблема с сервером или сессия уже была завершена.'
+						)
+					)
+				}
+				res.clearCookie(
+					this.configService.getOrThrow<string>('SESSION_NAME')
+				)
+				resolve()
+			})
+    })
+  }
 
   /** Сохранение сессии после успешной аутентификации. */
   private async saveSession(req: Request, user: User): Promise<void> {
