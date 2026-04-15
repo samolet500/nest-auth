@@ -48,25 +48,25 @@
 | `cookie-parser`             | Парсинг cookies из HTTP-запросов в Express                  |
 | `connect-redis`             | Хранение сессий express-session в Redis                     |
 | `express-session`           | Управление сессиями пользователей (session-based auth)      |
-| `ioredis`                   | Клиент для работы с Redis                                   |
+| `redis`                   | Клиент для работы с Redis                                     |
 | `@nestlab/google-recaptcha` | Интеграция Google reCAPTCHA                                 |
 | `@nestjs-modules/mailer`    | Отправка писем (SMTP, шаблоны)                              |
 | `@react-email/components`   | UI-компоненты для создания email-шаблонов в React           |
 | `@react-email/html`         | Рендеринг email-шаблонов в HTML                             |
-@prisma/adapter-pg
-pg
+| `@prisma/adapter-pg`        | Для работы Prisma с Postgres                                | 
+| `pg`                        | Для работы Prisma с Postgres                                | 
 
 ### Дев зависимости (npm install -D)
 
-| Пакет                                 | Назначение                                                                |
-| ------------------------------------- | ------------------------------------------------------------------------- |
-| @trivago/prettier-plugin-sort-imports | Плагин для Prettier, автоматически сортирует импорты по заданным правилам |
-| @types/uuid                           | TypeScript-типы для библиотеки uuid                                       |
-| @types/express-session                | TypeScript-типы для express-session                                       |
-| @types/cookie-parser                  | TypeScript-типы для cookie-parser                                         |
-| @types/react                          | TypeScript-типы для React (нужны для TS-подсказок и типизации JSX)        |
-| prisma                                | Prisma CLI                                                                |
-@types/pg
-eslint-import-resolver-typescript
+| Пакет                                   | Назначение                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| `@trivago/prettier-plugin-sort-imports` | Плагин для Prettier, автоматически сортирует импорты по заданным правилам |
+| `@types/uuid`                           | TypeScript-типы для библиотеки uuid                                       |
+| `@types/express-session`                | TypeScript-типы для express-session                                       |
+| `@types/cookie-parser`                  | TypeScript-типы для cookie-parser                                         |
+| `@types/react`                          | TypeScript-типы для React (нужны для TS-подсказок и типизации JSX)        |
+| `prisma`                                | Prisma CLI                                                                |
+| `@types/pg`                             | Типы Для Postgres                                                         | 
+| `eslint-import-resolver-typescript`     | Для правильной работы eslint                                              | 
 
 Подробнее про настройку API — в [`server/README.md`](server/README.md).

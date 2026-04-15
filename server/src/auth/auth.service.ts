@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import type { Request } from 'express';
 import { RegisterDto } from './dto/register.dto';
 import { UserService } from '@/user/user.service';
 import { AuthMethod } from 'generated/prisma/enums';
@@ -31,7 +32,6 @@ export class AuthService {
     );
     
     await this.saveSession(req, user);
-
     return user;
   }
 
@@ -42,20 +42,21 @@ export class AuthService {
   public async logout() {}
 
   /** Сохранение сессии после успешной аутентификации. */
-  private async saveSession(req: Request, user: User) {
-    return new Promise((resolve, reject) => {
-      req.session.user = user.id;
-      
+  private async saveSession(req: Request, user: User): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      req.session.userId = user.id;
       req.session.save((err) => {
         if (err) {
-          return reject(
+          reject(
             new InternalServerErrorException(
-              'Не удалось сохранить сессию. Проверьте, правильно ли настроены параметры сессии.',
+              'Не удалось сохранить сессию. Проверьте Redis и параметры сессии.',
+              { cause: err },
             ),
           );
+          return;
         }
-        resolve(true);
+        resolve();
       });
-    })
+    });
   }
 }

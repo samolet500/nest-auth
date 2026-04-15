@@ -3,7 +3,7 @@ import { AppModule } from '@/app.module';
 import cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
-import IORedis from 'ioredis';
+import { createClient } from 'redis';
 import session from 'express-session';
 import { ms, StringValue } from '@/common/utils/ms.util';
 import { parseBoolean } from '@/common/utils/parse-boolean.util';
@@ -15,7 +15,11 @@ async function bootstrap() {
 
   const config = app.get(ConfigService);
 
-  const redis = new IORedis(redisUrlFromConfig(config));
+  const redisClient = createClient({ url: redisUrlFromConfig(config) });
+  redisClient.on('error', (err) => {
+    console.error('[Redis]', err);
+  });
+  await redisClient.connect();
 
   // cookieParser: парсит куки из запроса и делает их доступными в req.cookies.
   app.use(cookieParser(config.getOrThrow<string>('COOKIE_SECRET')));
@@ -32,7 +36,7 @@ async function bootstrap() {
     session({
       secret: config.getOrThrow<string>('SESSION_SECRET'), // секретный ключ для подписи сессии
       name: config.getOrThrow<string>('SESSION_NAME'), // имя сессии
-      resave: true, // сохранять сессии даже если они не изменились // РЕКОМЕНДУЕТСЯ: false для Redis - это подсказал ИИ, Но пока оставил true
+      resave: false, // для connect-redis v9: полагаемся на touch вместо полного resave
       saveUninitialized: false, // сохранять неинициализированные сессии
       cookie: {
         domain: config.getOrThrow<string>('SESSION_DOMAIN'), // домен сессии
@@ -42,9 +46,9 @@ async function bootstrap() {
         sameSite: 'lax', // флаг sameSite сессии, для защиты от CSRF атак
       },
       store: new RedisStore({
-        client: redis, // клиент Redis для хранения сессий
-        prefix: config.getOrThrow<string>('SESSION_FOLDER'), // префикс сессий в Redis
-      }), // хранилище сессий в Redis
+        client: redisClient,
+        prefix: config.getOrThrow<string>('SESSION_FOLDER'),
+      }),
     }),
   );
 
