@@ -1,9 +1,13 @@
+/**
+ * OAuth-адаптер Google: задаёт endpoints и маппит профиль в единый формат.
+ */
 import { BaseOAuthService } from "./base-oauth.service";
 import { GoogleProfile } from "./types/google-profile.types";
 import { TypeProviderOptions } from "./types/provider.options.types";
 import { TypeUserInfo } from "./types/user-info.types";
 
 export class GoogleProvider extends BaseOAuthService {
+  /** Инициализирует OAuth-настройки Google из переданных credentials/scopes. */
   public constructor(options: TypeProviderOptions) {
     super({
       name: 'google',
@@ -16,6 +20,7 @@ export class GoogleProvider extends BaseOAuthService {
     })
   }
 
+  /** Преобразует ответ Google UserInfo в внутренний формат TypeUserInfo. */
   public async extractUserInfo(data: GoogleProfile): Promise<TypeUserInfo> {
     return super.extractUserInfo({
       email: data.email,

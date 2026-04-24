@@ -1,3 +1,6 @@
+/**
+ * HTTP-контроллер аутентификации: регистрация, вход, OAuth-подключение и выход.
+ */
 import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -10,12 +13,14 @@ import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
+  /** Внедряет зависимости сервисов аутентификации, провайдеров и конфигурации. */
   public constructor(
     private readonly authService: AuthService,
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService
   ) { }
 
+  /** Регистрирует пользователя по email/паролю и создаёт серверную сессию. */
   @Recaptcha()
   @Post('register')
   @HttpCode(HttpStatus.OK)
@@ -23,6 +28,7 @@ export class AuthController {
     return await this.authService.register(req, dto);
   }
 
+  /** Выполняет вход по email/паролю и сохраняет userId в сессии. */
   @Recaptcha()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -30,7 +36,9 @@ export class AuthController {
     return await this.authService.login(req, dto);
   }
 
+  /** Обрабатывает callback OAuth-провайдера по коду авторизации. */
   @Get('/oauth/callback/:provider')
+  /** Возвращает URL для старта OAuth-авторизации через выбранный провайдер. */
   @UseGuards(AuthProviderGuard)
   public async callback(
     @Req() req: Request,
@@ -57,6 +65,7 @@ export class AuthController {
     }
   }
 
+  /** Завершает пользовательскую сессию и очищает cookie сессии. */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   public async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

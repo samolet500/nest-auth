@@ -1,3 +1,6 @@
+/**
+ * Базовый OAuth-сервис: строит URL авторизации, меняет code на токены и получает профиль.
+ */
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import type { TypeBaseProviderOptions } from "./types/base-provider.options.types";
 import type { TypeUserInfo } from "./types/user-info.types";
@@ -6,8 +9,10 @@ import type { TypeUserInfo } from "./types/user-info.types";
 export class BaseOAuthService {
   private BASE_URL: string;
 
+  /** Сохраняет базовые параметры OAuth-провайдера. */
   public constructor(private readonly options: TypeBaseProviderOptions) { }
 
+  /** Нормализует данные профиля и дописывает поле provider. */
   protected async extractUserInfo(data: any): Promise<TypeUserInfo> {
     return {
       ...data,
@@ -15,6 +20,7 @@ export class BaseOAuthService {
     }
   }
 
+  /** Формирует URL для редиректа пользователя на страницу авторизации провайдера. */
   public getAuthUrl() {
     const query = new URLSearchParams({
       response_type: 'code',
@@ -28,6 +34,7 @@ export class BaseOAuthService {
     return `${this.options.authorize_url}?${query}`;
   }
 
+  /** По коду авторизации получает токены и профиль пользователя у провайдера. */
   public async findUserByCode(code: string): Promise<TypeUserInfo> {
     const client_id = this.options.client_id;
     const client_secret = this.options.client_secret;
@@ -82,26 +89,32 @@ export class BaseOAuthService {
     }
   }
 
+  /** Возвращает callback URL текущего провайдера для OAuth-обмена кодом. */
   public getRedirectUrl(): string {
     return `${this.BASE_URL}/auth/oauth/callback/${this.options.name}`;
   }
 
+  /** Устанавливает baseUrl приложения для формирования redirect_uri. */
   set baseUrl(value: string) {
     this.BASE_URL = value;
   }
 
+  /** Возвращает имя текущего OAuth-провайдера. */
   get name(): string {
     return this.options.name;
   }
 
+  /** Возвращает URL обмена code -> token для провайдера. */
   get accessUrl(): string {
     return this.options.access_url;
   }
 
+  /** Возвращает URL получения профиля пользователя у провайдера. */
   get profileUrl(): string {
     return this.options.profile_url;
   }
 
+  /** Возвращает список OAuth-scopes текущего провайдера. */
   get scopes(): string[] {
     return this.options.scopes;
   }

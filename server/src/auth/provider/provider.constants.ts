@@ -1,3 +1,6 @@
+/**
+ * Типы и токены DI для настройки модуля OAuth-провайдеров.
+ */
 import { FactoryProvider, ModuleMetadata } from "@nestjs/common"
 import { BaseOAuthService } from "./services/base-oauth.service"
 

@@ -1,9 +1,13 @@
+/**
+ * OAuth-адаптер Yandex: задаёт endpoints и маппит профиль в единый формат.
+ */
 import { BaseOAuthService } from "./base-oauth.service";
 import { TypeProviderOptions } from "./types/provider.options.types";
 import { TypeUserInfo } from "./types/user-info.types";
 import { YandexProfile } from "./types/yandex-rofile.type";
 
 export class YandexProvider extends BaseOAuthService {
+  /** Инициализирует OAuth-настройки Yandex из переданных credentials/scopes. */
   public constructor(options: TypeProviderOptions) {
     super({
       name: 'yandex',
@@ -16,6 +20,7 @@ export class YandexProvider extends BaseOAuthService {
     })
   }
 
+  /** Преобразует ответ Yandex Info API в внутренний формат TypeUserInfo. */
   public async extractUserInfo(data: YandexProfile): Promise<TypeUserInfo> {
     return super.extractUserInfo({
       email: data.emails?.[0],

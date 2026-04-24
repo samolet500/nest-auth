@@ -1,3 +1,6 @@
+/**
+ * Guard проверки OAuth-провайдера: убеждается, что провайдер зарегистрирован.
+ */
 import {
   CanActivate,
   ExecutionContext,
@@ -10,8 +13,10 @@ import { ProviderService } from '../provider/provider.service'
 
 @Injectable()
 export class AuthProviderGuard implements CanActivate {
+  /** Внедряет сервис поиска OAuth-провайдеров. */
   public constructor(private readonly providerService: ProviderService) { }
 
+  /** Проверяет наличие провайдера в конфигурации перед доступом к маршруту. */
   public canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest() as Request
 

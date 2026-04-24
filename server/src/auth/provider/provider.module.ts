@@ -1,9 +1,13 @@
+/**
+ * Динамический модуль провайдеров OAuth: регистрирует и отдаёт ProviderService.
+ */
 import { DynamicModule, Module } from '@nestjs/common';
 import { ProviderService } from './provider.service';
 import { ProviderOptionsSymbols, TypeAsyncOptions, TypeOptions } from './provider.constants';
 
 @Module({})
 export class ProviderModule {
+  /** Синхронно регистрирует список OAuth-сервисов и базовый URL приложения. */
   public static register(options: TypeOptions): DynamicModule {
     return {
       module: ProviderModule,
@@ -20,6 +24,7 @@ export class ProviderModule {
     }
   }
 
+  /** Асинхронно регистрирует провайдеры через фабрику и зависимости Nest. */
   public static registerAsync(options: TypeAsyncOptions): DynamicModule {
     return {
       module: ProviderModule,
