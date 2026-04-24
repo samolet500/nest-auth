@@ -101,5 +101,7 @@ model Token {
   type      TokenType @map("type")
   expiresIn Int       @map("expires_in")
 
+  createdAt DateTime @default(now()) @map("created_at")
+
   @@map("tokens")
 }
