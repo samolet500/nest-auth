@@ -7,7 +7,9 @@
 - Точка входа и инфраструктура: `src/main.ts`
 - Подключение модулей: `src/app.module.ts`
 - HTTP-эндпоинты auth: `src/auth/auth.controller.ts`
+- HTTP-эндпоинт подтверждения email: `src/auth/mail-confirmation/mail-confirmation.controller.ts`
 - Бизнес-логика auth: `src/auth/auth.service.ts`
+- Бизнес-логика подтверждения email: `src/auth/mail-confirmation/mail-confirmation.service.ts`
 - Работа с пользователем: `src/user/user.service.ts`
 - Guard сессии: `src/auth/guards/auth.guard.ts`
 - Guard ролей: `src/auth/guards/roles.guard.ts`
@@ -18,6 +20,8 @@
 - Конкретные провайдеры: `src/auth/provider/services/google.provider.ts`, `src/auth/provider/services/yandex.provider.ts`
 - Конфиг провайдеров: `src/config/providers.config.ts`
 - Конфиг reCAPTCHA: `src/config/recaptcha.config.ts`
+- Конфиг SMTP: `src/config/mailer.config.ts`
+- Почтовый сервис и модуль: `src/libs/mail/mail.service.ts`, `src/libs/mail/mail.module.ts`
 - Типизация сессии (`req.session.userId`): `src/express-session.d.ts`
 - Модели БД: `prisma/schema.prisma`
 
@@ -43,6 +47,7 @@
 - В `src/auth/auth.module.ts` регистрируются:
   - `ProviderModule.registerAsync(...)` (OAuth-провайдеры)
   - `GoogleRecaptchaModule.forRootAsync(...)`
+  - `MailConfirmationModule` (подтверждение email)
 
 ---
 
@@ -59,12 +64,14 @@
 6. Иначе `UserService.create(...)`:
    - пароль хешируется через `argon2`
    - создаётся запись в `users` (`authMethod = EMAIL`, `isVerified = false`)
-7. `AuthService.saveSession(req, user)`:
-   - пишет `req.session.userId = user.id`
-   - сохраняет сессию в Redis
-8. Возвращается созданный пользователь.
+7. `AuthService` вызывает `MailConfirmationService.sendVerificationToken(email)`:
+   - генерируется `uuid`-токен подтверждения
+   - старый verification-токен для email удаляется (если был)
+   - создаётся запись в таблице `tokens` с TTL 1 час (`expiresIn` в секундах)
+   - `MailService` рендерит html-шаблон и отправляет письмо через SMTP
+8. Клиент получает ответ: регистрация успешна, нужно подтвердить почту.
 
-Итого: регистрация сразу авторизует пользователя через серверную сессию.
+Итого: регистрация **не создаёт сессию сразу**. Сначала требуется подтверждение email.
 
 ---
 
@@ -80,14 +87,36 @@
 5. Если пользователя нет (или пароль пустой) -> `NotFoundException`.
 6. `argon2.verify(...)` сравнивает пароль.
 7. Если неверный -> `UnauthorizedException`.
-8. Если верный -> `saveSession(req, user)`.
-9. Возвращается пользователь.
+8. Если пароль верный, но `user.isVerified = false`:
+   - отправляется новый verification-токен на почту
+   - возвращается `UnauthorizedException` с просьбой подтвердить email
+9. Если email подтверждён -> `saveSession(req, user)`.
+10. Возвращается пользователь.
 
 ---
 
-## 5) OAuth-авторизация (Google/Yandex)
+## 5) Подтверждение email (`POST /auth/email-confirmation`)
 
-## 5.1 Старт OAuth (`GET /auth/oauth/connect/:provider`)
+Маршрут: `MailConfirmationController.newVerification()`
+
+### Цепочка
+1. Фронт отправляет `token` в `POST /auth/email-confirmation`.
+2. `MailConfirmationService.newVerification(...)` ищет токен типа `VERIFICATION` в таблице `tokens`.
+3. Если токен не найден -> `NotFoundException`.
+4. Проверяется срок жизни токена (`expiresIn` хранится в секундах Unix-time).
+5. Если токен истёк -> `BadRequestException`.
+6. По `email` из токена ищется пользователь.
+7. Если пользователь найден:
+   - в `users` ставится `isVerified = true`
+   - использованный токен удаляется из `tokens`
+8. Вызывается `AuthService.saveSession(...)`, пользователь сразу авторизуется.
+9. Клиент получает успешный ответ и уже может работать как авторизованный пользователь.
+
+---
+
+## 6) OAuth-авторизация (Google/Yandex)
+
+## 6.1 Старт OAuth (`GET /auth/oauth/connect/:provider`)
 
 Маршрут: `AuthController.connect()`
 
@@ -98,7 +127,7 @@
 3. Возвращает `url = provider.getAuthUrl()`.
 4. Фронт редиректит пользователя на этот URL.
 
-## 5.2 Callback OAuth (`GET /auth/oauth/callback/:provider?code=...`)
+## 6.2 Callback OAuth (`GET /auth/oauth/callback/:provider?code=...`)
 
 Маршрут: `AuthController.callback()`
 
@@ -119,10 +148,10 @@
 
 ---
 
-## 6) Что такое «аутентификация» и «авторизация» в этом коде
+## 7) Что такое «аутентификация» и «авторизация» в этом коде
 
 ## Аутентификация (кто ты?)
-- `register/login/oauth callback` подтверждают личность.
+- `login/oauth callback/email-confirmation` подтверждают личность.
 - Результат: в сессии есть `userId`.
 
 ## Авторизация (что тебе можно?)
@@ -136,7 +165,7 @@
 
 ---
 
-## 7) Как данные лежат в БД
+## 8) Как данные лежат в БД
 
 Смотри `prisma/schema.prisma`:
 
@@ -147,10 +176,13 @@
 - `Account`
   - oauth-данные: `provider`, `accessToken`, `refreshToken`, `expiresAt`
   - связь на `userId`
+- `Token`
+  - одноразовые токены (`VERIFICATION`, и др.)
+  - для подтверждения почты используется `token + email + expiresIn`
 
 ---
 
-## 8) Быстрый «трек» запроса по слоям
+## 9) Быстрый «трек» запроса по слоям
 
 Универсальная схема:
 
@@ -163,13 +195,15 @@
 
 ---
 
-## 9) Почему кажется, что файлов много
+## 10) Почему кажется, что файлов много
 
 Потому что ответственность уже разделена на слои:
 
 - `controller` — только HTTP
 - `auth.service` — сценарии входа/регистрации
 - `provider/*` — изоляция OAuth-логики
+- `mail-confirmation/*` — отдельный сценарий подтверждения email
+- `libs/mail/*` — инфраструктура отправки писем
 - `guards/decorators` — проверка доступа
 - `config/*` — сбор env-конфигурации
 
@@ -177,14 +211,16 @@
 
 ---
 
-## 10) Что посмотреть следующим шагом
+## 11) Что посмотреть следующим шагом
 
 Чтобы перестать путаться, удобно идти в таком порядке:
 
 1. `src/main.ts` (инфраструктура и сессии)
 2. `src/auth/auth.controller.ts` (какие есть маршруты)
 3. `src/auth/auth.service.ts` (основная логика)
-4. `src/auth/provider/services/base-oauth.service.ts` (общий OAuth)
-5. `src/auth/guards/auth.guard.ts` + `src/auth/decorators/auth.decorator.ts` (авторизация доступа)
+4. `src/auth/mail-confirmation/mail-confirmation.service.ts` (верификация email)
+5. `src/libs/mail/mail.service.ts` + `src/config/mailer.config.ts` (отправка писем)
+6. `src/auth/provider/services/base-oauth.service.ts` (общий OAuth)
+7. `src/auth/guards/auth.guard.ts` + `src/auth/decorators/auth.decorator.ts` (авторизация доступа)
 
 Если придерживаться этого порядка, почти вся схема в голове быстро складывается.

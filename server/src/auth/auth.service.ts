@@ -1,3 +1,6 @@
+/**
+ * Сервис аутентификации: регистрация, вход, OAuth-профили, сессии и выход.
+ */
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { RegisterDto } from './dto/register.dto';
@@ -9,19 +12,22 @@ import { verify } from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { ProviderService } from './provider/provider.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { MailConfirmationService } from './mail-confirmation/mail-confirmation.service';
 
 @Injectable()
 export class AuthService {
+  /** Внедряет зависимости для работы с пользователями, OAuth, сессией и подтверждением почты. */
   public constructor(
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
     private readonly configService: ConfigService,
-    private readonly providerService: ProviderService
+    private readonly providerService: ProviderService,
+    private readonly mailConfirmationService: MailConfirmationService
   ) { }
 
   /**
-   * Регистрация по email: проверяет уникальность email, создаёт пользователя
-   * с методом входа EMAIL и без верификации, возвращает созданную запись.
+   * Регистрация по email: создаёт пользователя и отправляет письмо подтверждения.
+   * До подтверждения email вход блокируется.
    */
   public async register(req: Request, dto: RegisterDto) {
     const isUserExists = await this.userService.findByEmail(dto.email);
@@ -32,7 +38,7 @@ export class AuthService {
       );
     }
 
-    const user = await this.userService.create(
+    const newUser = await this.userService.create(
       dto.email,
       dto.password,
       dto.name,
@@ -41,11 +47,17 @@ export class AuthService {
       false,
     );
 
-    await this.saveSession(req, user);
-    return user;
+    await this.mailConfirmationService.sendVerificationToken(newUser.email);
+
+    return {
+      message: 'Регистрация успешно завершена. Письмо с подтверждением отправлено на ваш email.',
+    }
   }
 
-  /** Вход в систему. */
+  /**
+   * Вход в систему: проверяет пароль и статус верификации email.
+   * Если email не подтверждён — отправляет новое письмо и возвращает ошибку.
+   */
   public async login(req: Request, dto: LoginDto) {
     const user = await this.userService.findByEmail(dto.email);
 
@@ -59,10 +71,20 @@ export class AuthService {
       throw new UnauthorizedException('Невернве email или пароль. Пожалуйста, попробуйте еще раз или восстановите пароль, если забыли его.');
     }
 
+    if (!user.isVerified) {
+      await this.mailConfirmationService.sendVerificationToken(
+        user.email
+      )
+      throw new UnauthorizedException(
+        'Ваш email не подтвержден. Пожалуйста, проверьте вашу почту и подтвердите адрес.'
+      )
+    }
+
     await this.saveSession(req, user);
     return user;
   }
 
+  /** Обрабатывает OAuth-код: находит/создаёт пользователя, связывает аккаунт и создаёт сессию. */
   public async extractProfileFromCode(req: Request, provider: string, code: string) {
     const providerInstance = this.providerService.findByService(provider);
     const profile = await providerInstance?.findUserByCode(code);
@@ -129,21 +151,23 @@ export class AuthService {
   }
 
   /** Сохранение сессии после успешной аутентификации. */
-  private async saveSession(req: Request, user: User): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-      req.session.userId = user.id;
-      req.session.save((err) => {
+  public async saveSession(req: Request, user: User) {
+    return new Promise((resolve, reject) => {
+      req.session.userId = user.id
+
+      req.session.save(err => {
         if (err) {
-          reject(
+          return reject(
             new InternalServerErrorException(
-              'Не удалось сохранить сессию. Проверьте Redis и параметры сессии.',
-              { cause: err },
-            ),
-          );
-          return;
+              'Не удалось сохранить сессию. Проверьте, правильно ли настроены параметры сессии.'
+            )
+          )
         }
-        resolve();
-      });
-    });
+
+        resolve({
+          user
+        })
+      })
+    })
   }
 }

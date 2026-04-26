@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "jsx": "react",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
@@ -15,8 +16,10 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-			"@/*": ["src/*"],
-		},
+      "@/*": [
+        "src/*"
+      ],
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

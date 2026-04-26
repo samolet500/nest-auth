@@ -6,7 +6,7 @@
  * На сервере `@nestlab/google-recaptcha` по секрету из env отправляет токен в Google и отклоняет
  * запрос, если проверка не прошла — так снижают брутфорс и регистрацию ботов на login/register.
  */
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { UserModule } from 'src/user/user.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -15,6 +15,7 @@ import { GoogleRecaptchaModule } from '@nestlab/google-recaptcha';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ProviderModule } from './provider/provider.module';
 import { getProvidersConfig } from '@/config/providers.config';
+import { MailConfirmationModule } from './mail-confirmation/mail-confirmation.module';
 
 /**
  * Регистрирует UserModule и глобально настраивает Google reCAPTCHA (секрет и способ чтения токена из запроса).
@@ -33,8 +34,10 @@ import { getProvidersConfig } from '@/config/providers.config';
       useFactory: getRecaptchaConfig,
       inject: [ConfigService],
     }),
+    forwardRef(() => MailConfirmationModule),
   ],
   controllers: [AuthController],
   providers: [AuthService],
+  exports: [AuthService],
 })
 export class AuthModule { }
