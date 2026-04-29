@@ -38,7 +38,7 @@ export class MailConfirmationService {
         'Токен подтверждения не найден. Пожалуйста, убедитесь, что у вас правильный токен.'
       )
     }
-    const isExpired = new Date(existingToken.expiresIn * 1000) < new Date()
+    const isExpired = existingToken.expiresIn < new Date()
 
     if (isExpired) {
       throw new BadRequestException(
@@ -108,7 +108,7 @@ export class MailConfirmationService {
         email,
         token,
         type: TokenType.VERIFICATION,
-        expiresIn: Math.floor(expiresIn.getTime() / 1000),
+        expiresIn,
       },
     });
 
