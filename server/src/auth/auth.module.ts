@@ -16,6 +16,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ProviderModule } from './provider/provider.module';
 import { getProvidersConfig } from '@/config/providers.config';
 import { MailConfirmationModule } from './mail-confirmation/mail-confirmation.module';
+import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module';
 
 /**
  * Регистрирует UserModule и глобально настраивает Google reCAPTCHA (секрет и способ чтения токена из запроса).
@@ -35,6 +36,7 @@ import { MailConfirmationModule } from './mail-confirmation/mail-confirmation.mo
       inject: [ConfigService],
     }),
     forwardRef(() => MailConfirmationModule),
+    TwoFactorAuthModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

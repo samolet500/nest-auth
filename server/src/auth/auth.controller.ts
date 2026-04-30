@@ -20,7 +20,7 @@ export class AuthController {
     private readonly configService: ConfigService
   ) { }
 
-  /** Регистрирует пользователя по email/паролю и создаёт серверную сессию. */
+  /** Регистрирует пользователя по email/паролю и отправляет письмо подтверждения (сессия не создаётся). */
   @Recaptcha()
   @Post('register')
   @HttpCode(HttpStatus.OK)
@@ -36,9 +36,8 @@ export class AuthController {
     return await this.authService.login(req, dto);
   }
 
-  /** Обрабатывает callback OAuth-провайдера по коду авторизации. */
+  /** Обрабатывает callback OAuth-провайдера по коду авторизации и редиректит на фронт. */
   @Get('/oauth/callback/:provider')
-  /** Возвращает URL для старта OAuth-авторизации через выбранный провайдер. */
   @UseGuards(AuthProviderGuard)
   public async callback(
     @Req() req: Request,
@@ -55,6 +54,7 @@ export class AuthController {
     return res.redirect(`${this.configService.getOrThrow<string>('ALLOWED_ORIGIN')}/dashboard/settings`);
   }
 
+  /** Возвращает URL для старта OAuth-авторизации через выбранный провайдер. */
   @UseGuards(AuthProviderGuard)
   @Get('/oauth/connect/:provider')
   public async connect(@Param('provider') provider: string) {

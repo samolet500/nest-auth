@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { render } from '@react-email/components';
 import { ConfirmationTemplate } from './templates/confirmaton.template';
 import { ResetPasswordTemplate } from './templates/reset-password.template';
+import { TwoFactorAuthTemplate } from './templates/two-factor-auth.template';
 
 @Injectable()
 export class MailService {
@@ -24,11 +25,19 @@ export class MailService {
     return this.sendEmail(email, 'Подтверждение почты', template)
   }
 
+  /** Отправляет письмо со ссылкой сброса пароля (токен подставляется в шаблон на фронт-домене). */
   public async sendPasswordResetEmail(email: string, token: string) {
     const domain = this.configService.getOrThrow<string>('ALLOWED_ORIGIN')
     const template = await render(ResetPasswordTemplate({ domain, token }))
 
     return this.sendEmail(email, 'Сброс пароля', template)
+  }
+
+  /** Отправляет одноразовый числовой код для второго шага входа (2FA). */
+  public async sendTwoFactorTokenEmail(email: string, token: string) {
+    const html = await render(TwoFactorAuthTemplate({ token }))
+
+    return this.sendEmail(email, 'Подтверждение вашей личности', html)
   }
 
   /** Отправляет готовое HTML-письмо получателю через MailerService. */

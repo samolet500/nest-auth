@@ -1,3 +1,6 @@
+/**
+ * DTO запроса сброса пароля: только email для отправки письма с токеном.
+ */
 import { IsEmail, IsNotEmpty } from 'class-validator'
 
 export class ResetPasswordDto {

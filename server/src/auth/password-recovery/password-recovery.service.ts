@@ -1,3 +1,6 @@
+/**
+ * Сервис восстановления пароля: токен PASSWORD_RESET в БД и письмо со ссылкой на сброс.
+ */
 import { MailService } from '@/libs/mail/mail.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { UserService } from '@/user/user.service';
@@ -10,12 +13,14 @@ import { hash } from 'argon2';
 
 @Injectable()
 export class PasswordRecoveryService {
+  /** Внедряет БД, поиск пользователя и отправку писем с токеном сброса. */
   public constructor(
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
     private readonly mailService: MailService,
   ) { }
 
+  /** По email создаёт или заменяет токен сброса и отправляет письмо (если пользователь существует). */
   public async resetPassword(dto: ResetPasswordDto) {
     const existingUser = await this.userService.findByEmail(dto.email);
 
@@ -30,6 +35,7 @@ export class PasswordRecoveryService {
     return true;
   }
 
+  /** Проверяет токен, обновляет пароль пользователя и удаляет использованный токен. */
   public async newPassword(dto: NewPasswordDto, token: string) {
     const existingToken = await this.prismaService.token.findFirst({
       where: {
@@ -79,6 +85,7 @@ export class PasswordRecoveryService {
 		return true
   }
 
+  /** Генерирует uuid-токен с TTL ~1 час и записью в таблице tokens. */
   private async generatePasswordResetToken(email: string) {
     const token = uuidv4()
     const expiresIn = new Date(new Date().getTime() + 3600 * 1000)

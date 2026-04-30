@@ -1,3 +1,6 @@
+/**
+ * DTO нового пароля при переходе по ссылке с токеном сброса.
+ */
 import { IsNotEmpty, IsString, MinLength } from 'class-validator'
 
 export class NewPasswordDto {

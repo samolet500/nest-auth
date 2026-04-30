@@ -1,3 +1,6 @@
+/**
+ * DTO входа по email/паролю; поле code — одноразовый код 2FA со второго запроса после письма.
+ */
 import {
 	IsEmail,
 	IsNotEmpty,
@@ -17,8 +20,7 @@ export class LoginDto {
 	@MinLength(6, { message: 'Пароль должен содержать не менее 6 символов.' })
 	password: string
 
-	// TODO: добавить валидацию кода из email
-	// @IsOptional()
-	// @IsString()
-	// code: string
+	@IsOptional()
+	@IsString()
+	code: string
 }

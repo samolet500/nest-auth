@@ -1,3 +1,6 @@
+/**
+ * Модуль восстановления пароля: контроллер и сервис с токенами PASSWORD_RESET.
+ */
 import { Module } from '@nestjs/common';
 import { PasswordRecoveryService } from './password-recovery.service';
 import { PasswordRecoveryController } from './password-recovery.controller';
@@ -6,6 +9,6 @@ import { MailService } from '@/libs/mail/mail.service';
 
 @Module({
   controllers: [PasswordRecoveryController],
-  providers: [PasswordRecoveryService, UserService,MailService],
+  providers: [PasswordRecoveryService, UserService, MailService],
 })
 export class PasswordRecoveryModule {}

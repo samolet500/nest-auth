@@ -13,16 +13,18 @@ import { ConfigService } from '@nestjs/config';
 import { ProviderService } from './provider/provider.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { MailConfirmationService } from './mail-confirmation/mail-confirmation.service';
+import { TwoFactorAuthService } from './two-factor-auth/two-factor-auth.service';
 
 @Injectable()
 export class AuthService {
-  /** Внедряет зависимости для работы с пользователями, OAuth, сессией и подтверждением почты. */
+  /** Внедряет зависимости для пользователей, OAuth, сессии, подтверждения почты и 2FA. */
   public constructor(
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
     private readonly configService: ConfigService,
     private readonly providerService: ProviderService,
-    private readonly mailConfirmationService: MailConfirmationService
+    private readonly mailConfirmationService: MailConfirmationService,
+    private readonly twoFactorAuthService: TwoFactorAuthService
   ) { }
 
   /**
@@ -55,8 +57,8 @@ export class AuthService {
   }
 
   /**
-   * Вход в систему: проверяет пароль и статус верификации email.
-   * Если email не подтверждён — отправляет новое письмо и возвращает ошибку.
+   * Вход в систему: пароль, верификация email, при включённой 2FA — код из письма, затем сессия.
+   * Без кода при 2FA возвращает сообщение и отправляет одноразовый код на почту (сессия не создаётся).
    */
   public async login(req: Request, dto: LoginDto) {
     const user = await this.userService.findByEmail(dto.email);
@@ -68,7 +70,7 @@ export class AuthService {
     const isPasswordValid = await verify(user.password, dto.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Невернве email или пароль. Пожалуйста, попробуйте еще раз или восстановите пароль, если забыли его.');
+      throw new UnauthorizedException('Неверные email или пароль. Пожалуйста, попробуйте еще раз или восстановите пароль, если забыли его.');
     }
 
     if (!user.isVerified) {
@@ -80,8 +82,23 @@ export class AuthService {
       )
     }
 
-    await this.saveSession(req, user);
-    return user;
+    if (user.isTwoFactorEnabled) {
+      if (!dto.code) {
+        await this.twoFactorAuthService.sendTwoFactorToken(user.email);
+
+        return {
+          message:
+            'Проверьте вашу почту. Требуется код двухфакторной аутентификации.'
+        }
+      }
+
+      await this.twoFactorAuthService.validateTwoFactorToken(
+        user.email,
+        dto.code
+      )
+    }
+
+    return this.saveSession(req, user)
   }
 
   /** Обрабатывает OAuth-код: находит/создаёт пользователя, связывает аккаунт и создаёт сессию. */
