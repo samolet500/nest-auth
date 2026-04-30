@@ -2,10 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthMethod } from 'generated/prisma/enums';
 import { hash } from 'argon2';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
-  public constructor(private readonly prismaService: PrismaService) {}
+  public constructor(private readonly prismaService: PrismaService) { }
 
   /**
    * Возвращает пользователя по id вместе со связанными аккаунтами.
@@ -75,5 +76,26 @@ export class UserService {
       },
     });
     return user;
+  }
+
+  /**
+   * Обновляет профиль пользователя: email, имя и флаг включения 2FA при логине.
+   * Сначала проверяет существование записи через findById.
+   */
+  public async update(userId: string, dto: UpdateUserDto) {
+    const user = await this.findById(userId)
+
+    const updatedUser = await this.prismaService.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        email: dto.email,
+        name: dto.name,
+        isTwoFactorEnabled: dto.isTwoFactorEnabled
+      }
+    })
+
+    return updatedUser
   }
 }
